@@ -2,7 +2,7 @@ import React, { Component } from  'react';
 import PropTypes from 'prop-types';
 import BookmarksContext from '../BookmarksContext';
 import config from '../config'
-import '../AddBookmark/AddBookmark.css';
+import './EditBookmark.css';
 
 const Required = () => (
   <span className='AddBookmark__required'>*</span>
@@ -10,6 +10,9 @@ const Required = () => (
 
 class EditBookmark extends Component {
   static propTypes = {
+    match: PropTypes.shape({
+      params: PropTypes.object,
+    }),
     history: PropTypes.shape({
       push: PropTypes.func,
     }).isRequired,
@@ -18,35 +21,35 @@ class EditBookmark extends Component {
   static contextType = BookmarksContext;
 
   state = {
+    error: null,
+    id: '',
     title: '',
     url: '',
     description: '',
     rating: 1,
-    error: null,
   };
 
   componentDidMount() {
-    const { bookmarkId } = this.props.match.params;
+    const { bookmarkId } = this.props.match.params
     fetch(config.API_ENDPOINT + `/${bookmarkId}`, {
       method: 'GET',
       headers: {
-        'content-type': 'application/json',
-        'Authorization': `Bearer ${config.API_KEY}`
+        'authorization': `Bearer ${config.API_KEY}`
       }
     })
       .then(res => {
-        if (!res.ok) {
+        if (!res.ok)
           return res.json().then(error => Promise.reject(error))
-        }
+
         return res.json()
       })
-      .then(response =>{
+      .then(responseData => {
         this.setState({
-          id: response.id,
-          title: response.title,
-          url: response.url,
-          description: response.description,
-          rating: response.rating,
+          id: responseData.id,
+          title: responseData.title,
+          url: responseData.url,
+          description: responseData.description,
+          rating: responseData.rating,
         })
       })
       .catch(error => {
@@ -55,31 +58,42 @@ class EditBookmark extends Component {
       })
   }
 
+  handleChangeTitle = e => {
+    this.setState({ title: e.target.value })
+  };
+
+  handleChangeUrl = e => {
+    this.setState({ url: e.target.value })
+  };
+
+  handleChangeDescription = e => {
+    this.setState({ description: e.target.value })
+  };
+
+  handleChangeRating = e => {
+    this.setState({ rating: e.target.value })
+  };
+
   handleSubmit = e => {
     e.preventDefault()
-    // get the form fields from the event
-    const { bookmarkId } = this.props.match.params;
-    const {id, title, url, description, rating } = this.state;
-    const bookmark = {id, title, url, description, rating}
-    console.log(bookmark);
-    this.setState({ error: null })
-    fetch(config.API_ENDPOINT + `${bookmarkId}`, {
+    const { bookmarkId } = this.props.match.params
+    const { id, title, url, description, rating } = this.state
+    const newBookmark = { id, title, url, description, rating }
+    fetch(config.API_ENDPOINT + `/${bookmarkId}`, {
       method: 'PATCH',
-      body: JSON.stringify(bookmark),
+      body: JSON.stringify(newBookmark),
       headers: {
         'content-type': 'application/json',
         'authorization': `Bearer ${config.API_KEY}`
-      }
+      },
     })
       .then(res => {
-        if (!res.ok) {
+        if (!res.ok)
           return res.json().then(error => Promise.reject(error))
-        }
-        return res.json()
       })
       .then(() => {
-        this.resetFields(bookmark)
-        this.context.updateBookmark(bookmark)
+        this.resetFields(newBookmark)
+        this.context.updateBookmark(newBookmark)
         this.props.history.push('/')
       })
       .catch(error => {
@@ -88,55 +102,36 @@ class EditBookmark extends Component {
       })
   }
 
-resetFields = (newFields) =>{
-  this.setState({
-    id: newFields.id || '',
-    title: newFields.title || '',
-    url: newFields.url || '',
-    description: newFields.description || '',
-    rating: newFields.rating || '',
-  })
-}
-
+  resetFields = (newFields) => {
+    this.setState({
+      id: newFields.id || '',
+      title: newFields.title || '',
+      url: newFields.url || '',
+      description: newFields.description || '',
+      rating: newFields.rating || '',
+    })
+  }
 
   handleClickCancel = () => {
     this.props.history.push('/')
   };
 
-handleTitleChange = (e) =>{
-  this.setState({
-    title: e.target.value
-  });
-}
-handleUrlChange = (e) =>{
-  this.setState({
-    url: e.target.value
-  });
-}
-handleDescriptionChange = (e) =>{
-  this.setState({
-    description: e.target.value
-  });
-}
-handleRatingChange = (e) =>{
-  this.setState({
-    rating: e.target.value
-  });
-}
-
   render() {
-    // console.log(selectedBookmark);
     const { error, title, url, description, rating } = this.state
     return (
-      <section className='AddBookmark'>
-        <h2>Edit a bookmark</h2>
+      <section className='EditBookmark'>
+        <h2>Edit bookmark</h2>
         <form
-          className='AddBookmark__form'
+          className='EditBookmark__form'
           onSubmit={this.handleSubmit}
         >
-          <div className='AddBookmark__error' role='alert'>
+          <div className='EditBookmark__error' role='alert'>
             {error && <p>{error.message}</p>}
           </div>
+          <input
+            type='hidden'
+            name='id'
+          />
           <div>
             <label htmlFor='title'>
               Title
@@ -150,7 +145,7 @@ handleRatingChange = (e) =>{
               placeholder='Great website!'
               required
               value={title}
-              onChange={this.handleTitleChange}
+              onChange={this.handleChangeTitle}
             />
           </div>
           <div>
@@ -166,7 +161,7 @@ handleRatingChange = (e) =>{
               placeholder='https://www.great-website.com/'
               required
               value={url}
-              onChange={this.handleUrlChange}
+              onChange={this.handleChangeUrl}
             />
           </div>
           <div>
@@ -177,7 +172,7 @@ handleRatingChange = (e) =>{
               name='description'
               id='description'
               value={description}
-              onChange={this.handleDescriptionChange}
+              onChange={this.handleChangeDescription}
             />
           </div>
           <div>
@@ -190,14 +185,14 @@ handleRatingChange = (e) =>{
               type='number'
               name='rating'
               id='rating'
-              defaultValue={rating}
               min='1'
               max='5'
               required
-              onChange={this.handleRatingChange}
+              value={rating}
+              onChange={this.handleChangeRating}
             />
           </div>
-          <div className='AddBookmark__buttons'>
+          <div className='EditBookmark__buttons'>
             <button type='button' onClick={this.handleClickCancel}>
               Cancel
             </button>
